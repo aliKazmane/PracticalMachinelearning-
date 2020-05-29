@@ -1,0 +1,30 @@
+\newpage
+\section{Intro}
+ The human activity recognition is a vast domain which was researched quite fairly. However most of the research papers available focus on drawing a distinction between the activities not how well they will perform. Hence the question of this research will be to investigate how well a person can do an activity via Machine learning algorithms. 1- we will start by collecting data. to do so ( 6 participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E)  - you can find more details here http://groupware.les.inf.puc-rio.br/har)
+
+\section{Exploring and visualizing the Data}
+
+we will first remove the columns that are empty ( Na) then we will remove the identification columns which fairly speaking will not serve a lot because the 6 participants are equally performant and share the same interval of age. After we will remove the variables that have a variance near zero. Finally we show the dimensions of the new tables to show how much we removed.
+Finally we visualize the correlations between the remaining variables as a rule of thumb a correlation of more than 0.8 is considered very high and a PCA should be executed. However from the plot we find that the variables that are correlated are very rare so to not lose information and computational time and for the sake of interpretability, speed and simplicity of course we don't do PCA (we sacrifice a little accuracy)
+Considering the features plot it is a way to look at all the data and it appears that there isnt any strange pattern however we can all agree that its a little bit hard to interpret knowing that it is a very small plot.
+Also we can clearly see that there is not some strange pattern or deviance so we assume there is no need for scaling and centering the data.
+
+
+\section{Algortihms}
+
+we start by fitting the algorithms and looking at their estimated OSE : we choose three algorithms to begin with and we will be trying to do some stacking at the end for the sake of accuracy.
+
+The first algorithm is Random forests which can be considered as the decision resulting from multiple decision trees that investigate each variable and here each movement to be able to predict the class.
+
+
+The second algorithm is decision trees and we use it to see if a much simpler machine learning technique will give us a very good result near the one of the Random forest.
+
+The third algorithm which is the gradient boosting model using trees which correct each the errors made by the previous trees and GBM does not simply average them like the Random forest algorithm but this model is more overfitting friendly.
+
+ From the results that we have seen we can clearly see that the Random forest is the best performing model for Accuracy and hence for the OSE so we choose it to apply for our prediction on the testing data.
+ 
+The GBM is very close to RF but normaly it involves more overfitting so the perfect predictor is the random forest one
+
+\section{Prediction and conclusion}
+So as everyone can see we get our data it is very clear that the Random Forest performs better and that it does well in predictiong the class however there may be some overfitting and we didnot perform the stacking as the Random forest is enough and stacking will only increase the overfitting.
+Now personnaly for machine learning i believe in the theory of double descent however for such clear project and question the model do not need to be very complicated.
