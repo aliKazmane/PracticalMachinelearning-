@@ -103,7 +103,7 @@ predictrf <- predict(modfitrf, newdata=Validation)
 cfmrf <- confusionMatrix(predictrf,Validation$classe)
 print(cfmrf)
 
-````
+```
 The second algorithm is decision trees and we use it to see if a much simpler machine learning technique will give us a very good result near the one of the Random forest.
 ```{r echo=FALSE, message=FALSE, warning=FALSE} 
 #decision tree
@@ -115,7 +115,7 @@ predictdt <- predict(modfitdt, newdata=Validation)
 cfmdt <- confusionMatrix(predictdt,Validation$classe)
 print(cfmdt)
 
-````
+```
 the third algorithm which is the gradient boosting model using trees which correct each the errors made by the previous trees and GBM does not simply average them like the Random forest algorithm but this model is more overfitting friendly.
 ```{r echo=FALSE, message=FALSE, warning=FALSE} 
 #gbm
@@ -127,7 +127,7 @@ modfitgbm$finalModel
 predictgbm <- predict(modfitgbm, newdata=Validation)
 cfmgbm <- confusionMatrix(predictgbm,Validation$classe)
 print(cfmgbm)
-````
+```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE} 
 Accuracyofmodels <- data.frame(
