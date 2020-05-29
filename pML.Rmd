@@ -1,0 +1,154 @@
+---
+---
+title: "Practical Machine Learning"
+author: "Ali Kazmane "
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    highlight: tango
+    keep_tex: yes
+    latex_engine: xelatex
+    number_sections: yes
+    toc: yes
+  word_document:
+    toc: yes
+---
+\newpage
+\section{Intro}
+ The human activity recognition is a vast domain which was researched quite fairly. However most of the research papers available focus on drawing a distinction between the activities not how well they will perform. Hence the question of this research will be to investigate how well a person can do an activity via Machine learning algorithms. 1- we will start by collecting data. to do so ( 6 participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E)  - you can find more details here http://groupware.les.inf.puc-rio.br/har)
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+library(ggplot2)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(corrplot)
+library(dplyr)
+library(rattle)
+library(gbm)
+library(ROCR)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+set.seed(1998)
+
+Dtrain <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+
+Dtest <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+
+
+
+
+```
+\section{Exploring and visualizing the Data}
+
+we will first remove the columns that are empty ( Na) then we will remove the identification columns which fairly speaking will not serve a lot because the 6 participants are equally performant and share the same interval of age. After we will remove the variables that have a variance near zero. Finally we show the dimensions of the new tables to show how much we removed.
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+#remove the na columns
+Dtrain <- Dtrain[, colSums(is.na(Dtrain)) == 0] 
+Dtest <- Dtest[, colSums(is.na(Dtest)) == 0] 
+dim(Dtrain)
+#remove the identification columns
+
+Dtrain <- Dtrain[, -(1:5)]
+Dtest <- Dtest[, -(1:5)]
+
+dim(Dtrain)
+#remove the variables that don't vary a lot
+nzv <- nearZeroVar(Dtrain,saveMetrics=TRUE)
+Dtrain <- Dtrain[,nzv$nzv==FALSE]
+
+nzv <- nearZeroVar(Dtest,saveMetrics=TRUE)
+Dtest <- Dtest[,nzv$nzv==FALSE]
+
+dim(Dtrain)
+```
+Finally we visualize the correlations between the remaining variables as a rule of thumb a correlation of more than 0.8 is considered very high and a PCA should be executed. However from the plot we find that the variables that are correlated are very rare so to not lose information and computational time and for the sake of interpretability, speed and simplicity of course we don't do PCA (we sacrifice a little accuracy)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+inTrain = createDataPartition(Dtrain$classe, p = 0.75, list=FALSE)
+training = Dtrain[inTrain,]
+Validation = Dtrain[-inTrain,]
+
+
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+mumatrix<-cor(training[,-54])
+corrplot(mumatrix,method="color",type="upper",tl.cex= 0.2)
+
+featurePlot(x= training[,-54],y=training$classe,tl.cex= 0.05)
+
+
+
+```
+Considering the features plot it is a way to look at all the data and it appears that there isnt any strange pattern however we can all agree that its a little bit hard to interpret knowing that it is a very small plot.
+Also we can clearly see that there is not some strange pattern or deviance so we assume there is no need for scaling and centering the data.
+
+
+\section{Algortihms}
+
+we start by fitting the algorithms and looking at their estimated OSE : we choose three algorithms to begin with and we will be trying to do some stacking at the end for the sake of accuracy.
+
+The first algorithm is Random forests which can be considered as the decision resulting from multiple decision trees that investigate each variable and here each movement to be able to predict the class.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+#Random Forest 
+set.seed(1998)
+fc <- trainControl(method="cv", number=3)
+modfitrf <- train(classe~ .,data=training,method="rf",trControl=fc)
+modfitrf$finalModel
+
+#prediction
+predictrf <- predict(modfitrf, newdata=Validation)
+cfmrf <- confusionMatrix(predictrf,Validation$classe)
+print(cfmrf)
+
+````
+The second algorithm is decision trees and we use it to see if a much simpler machine learning technique will give us a very good result near the one of the Random forest.
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+#decision tree
+modfitdt <- train(classe~ .,data=training,method="rpart")
+modfitdt$finalModel
+fancyRpartPlot(modfitdt$finalModel)
+#prediction
+predictdt <- predict(modfitdt, newdata=Validation)
+cfmdt <- confusionMatrix(predictdt,Validation$classe)
+print(cfmdt)
+
+````
+the third algorithm which is the gradient boosting model using trees which correct each the errors made by the previous trees and GBM does not simply average them like the Random forest algorithm but this model is more overfitting friendly.
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+#gbm
+controlGBM <- trainControl(method = "repeatedcv", number = 3, repeats = 1)
+modfitgbm <- train(classe~ .,data=training,method="gbm", trControl = controlGBM,verbose = FALSE)
+modfitgbm$finalModel
+
+#prediction
+predictgbm <- predict(modfitgbm, newdata=Validation)
+cfmgbm <- confusionMatrix(predictgbm,Validation$classe)
+print(cfmgbm)
+````
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+Accuracyofmodels <- data.frame(
+  Model = c("Random Forest", "decision tree", "GBM"),
+  Accuracy = rbind(cfmrf$overall[1], cfmdt$overall[1], cfmgbm$overall[1])
+)
+print(Accuracyofmodels)
+```
+ From the results that we have seen we can clearly see that the Random forest is the best performing model for Accuracy and hence for the OSE so we choose it to apply for our prediction on the testing data.
+ 
+The GBM is very close to RF but normaly it involves more overfitting so the perfect predictor is the random forest one
+
+\section{Prediction and conclusion}
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+predicitionFinal <- predict(modfitrf,newdata = Dtest)
+PredictionResults <- data.frame(
+  problem_id= Dtest$problem_id,
+  predicted=predicitionFinal
+)
+print(predicitionFinal)
+```
+So as everyone can see we get our data it is very clear that the Random Forest performs better and that it does well in predictiong the class however there may be some overfitting and we didnot perform the stacking as the Random forest is enough and stacking will only increase the overfitting.
+Now personnaly for machine learning i believe in the theory of double descent however for such clear project and question the model do not need to be very complicated.
